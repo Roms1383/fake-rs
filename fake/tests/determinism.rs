@@ -1,5 +1,7 @@
-use fake::{Fake, Faker, locales::* };
-use rand::SeedableRng as _;
+use rand::SeedableRng;
+use fake::Fake;
+use fake::Faker;
+use fake::locales::*;
 
 macro_rules! check_determinism {
     (one $name:ident, $ty:ty, $op:expr) => {
@@ -174,13 +176,20 @@ check_determinism! { l10d SafeEmail; String, fake_safeemail_en, fake_safeemail_f
 check_determinism! { l10d UserAgent; String, fake_useragent_en, fake_useragent_fr, fake_useragent_cn, fake_useragent_tw }
 check_determinism! { l10d Username; String, fake_username_en, fake_username_fr, fake_username_cn, fake_username_tw }
 // it's sufficient to check one language, because it doesn't change anything
-// #[cfg(feature = "uuid")]
-// mod uuid {
-//   use fake::faker::uuid::raw::*;
-//   use fake::UuidConfig;
-//   use fake::locales::EN;
-//   check_determinism! { one fake_uuid, uuid::Uuid, Uuid(EN, UuidConfig::Seed(&0u128)) }
-// }
+#[cfg(feature = "uuid")]
+mod uuid {
+  use fake::faker::uuid::raw::*;
+  use fake::UuidConfig;
+  use fake::locales::EN;
+  use uuid::v1::Timestamp;
+  use rand::SeedableRng;
+  use fake::Fake;
+  // UUID v4 is not determistic
+  check_determinism! { one fake_uuid_seed, uuid::Uuid, Uuid(EN, UuidConfig::Seed(&0u128)) }
+  check_determinism! { one fake_uuid_v1, uuid::Uuid, Uuid(EN, UuidConfig::V1(Timestamp::from_rfc4122(0u64,0u16), &[0u8; 6])) }
+  check_determinism! { one fake_uuid_v3, uuid::Uuid, Uuid(EN, UuidConfig::V3(uuid::Uuid::nil(), &[0u8; 16])) }
+  check_determinism! { one fake_uuid_v5, uuid::Uuid, Uuid(EN, UuidConfig::V5(uuid::Uuid::nil(), &[0u8; 16])) }
+}
 
 // Job
 mod job {
